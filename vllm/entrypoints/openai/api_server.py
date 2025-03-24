@@ -456,6 +456,9 @@ async def create_chat_completion(request: ChatCompletionRequest,
 
     generator = await handler.create_chat_completion(request, raw_request)
 
+    print(f"generator.choices: {generator.choices}")
+    logger.debug("lei test: %s", generator.model_dump())
+
     if isinstance(generator, ErrorResponse):
         return JSONResponse(content=generator.model_dump(),
                             status_code=generator.code)
@@ -476,8 +479,7 @@ async def create_completion(request: CompletionRequest, raw_request: Request):
             message="The model does not support Completions API")
 
     generator = await handler.create_completion(request, raw_request)
-    print(f"generator.choices: {generator.choices}")
-    logger.debug("lei test: %s",generator.model_dump())
+
     if isinstance(generator, ErrorResponse):
         return JSONResponse(content=generator.model_dump(),
                             status_code=generator.code)
