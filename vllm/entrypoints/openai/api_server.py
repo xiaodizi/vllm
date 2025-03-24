@@ -92,7 +92,9 @@ TIMEOUT_KEEP_ALIVE = 5  # seconds
 prometheus_multiproc_dir: tempfile.TemporaryDirectory
 
 # Cannot use __name__ (https://github.com/vllm-project/vllm/pull/4765)
-logger = init_logger('vllm.entrypoints.openai.api_server')
+# logger = init_logger('vllm.entrypoints.openai.api_server')
+
+logger = init_logger(__name__)
 
 _running_tasks: set[asyncio.Task] = set()
 
