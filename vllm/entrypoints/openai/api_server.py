@@ -456,7 +456,6 @@ async def create_chat_completion(request: ChatCompletionRequest,
 
     generator = await handler.create_chat_completion(request, raw_request)
 
-    print(f"generator.choices: {generator.choices}")
     logger.debug("lei test: %s", generator.model_dump())
 
     if isinstance(generator, ErrorResponse):
