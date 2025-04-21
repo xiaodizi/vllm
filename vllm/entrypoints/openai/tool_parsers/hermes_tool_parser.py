@@ -24,7 +24,7 @@ logger = init_logger(__name__)
 
 @ToolParserManager.register_module("hermes")
 class Hermes2ProToolParser(ToolParser):
-
+    detal = []
     def __init__(self, tokenizer: AnyTokenizer):
         super().__init__(tokenizer)
 
@@ -65,7 +65,6 @@ class Hermes2ProToolParser(ToolParser):
         model_output: str,
         request: ChatCompletionRequest,
     ) -> ExtractedToolCallInformation:
-
         # sanity check; avoid unnecessary processing
         if self.tool_call_start_token not in model_output:
             return ExtractedToolCallInformation(tools_called=False,
@@ -123,7 +122,6 @@ class Hermes2ProToolParser(ToolParser):
         delta_token_ids: Sequence[int],
         request: ChatCompletionRequest,
     ) -> Union[DeltaMessage, None]:
-
         logger.debug("delta_text: %s", delta_text)
         logger.debug("delta_token_ids: %s", delta_token_ids)
         # check to see if we should be streaming a tool call - is there a
@@ -340,12 +338,14 @@ class Hermes2ProToolParser(ToolParser):
 
             # last case -- we have an update to existing arguments.
             elif cur_arguments and prev_arguments:
+                # delta_text = delta_text.lstrip();
                 if isinstance(delta_text, str) and len(delta_text.rstrip(
-                )) >= 1 and delta_text.rstrip()[-1] == '}':
+                )) > 1 and delta_text.rstrip()[-1] == '}':
                     if delta_text.replace('\n', '').replace('\r', '') == '}':
                         logger.debug("Exceptional condition: %s", delta_text)
                     delta_text = delta_text.rstrip()[:-1]
-
+                else:
+                    delta_text = delta_text.replace('\n', '').replace('\r', '')
                 logger.debug("got diff %s", delta_text)
 
                 delta = DeltaMessage(tool_calls=[
