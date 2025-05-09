@@ -20,11 +20,11 @@ from vllm.transformers_utils.tokenizer import AnyTokenizer, MistralTokenizer
 from vllm.utils import random_uuid
 
 logger = init_logger(__name__)
-
+detal = []
 
 @ToolParserManager.register_module("hermes")
 class Hermes2ProToolParser(ToolParser):
-    detal = []
+
     def __init__(self, tokenizer: AnyTokenizer):
         super().__init__(tokenizer)
 
@@ -111,6 +111,7 @@ class Hermes2ProToolParser(ToolParser):
                 return ExtractedToolCallInformation(tools_called=False,
                                                     tool_calls=[],
                                                     content=model_output)
+
 
     def extract_tool_calls_streaming(
         self,
@@ -338,13 +339,20 @@ class Hermes2ProToolParser(ToolParser):
 
             # last case -- we have an update to existing arguments.
             elif cur_arguments and prev_arguments:
+                detal.append(delta_text)
+                logger.debug("lei test: %s", detal)
                 # delta_text = delta_text.lstrip();
                 if isinstance(delta_text, str) and len(delta_text.rstrip(
-                )) > 1 and delta_text.rstrip()[-1] == '}':
-                    if delta_text.replace('\n', '').replace('\r', '') == '}':
+                )) > 1 and delta_text.rstrip()[-1] == '}' and delta_text[0] == '}':
+                    if delta_text.lstrip().rstrip()[0] == '}':
                         logger.debug("Exceptional condition: %s", delta_text)
                     delta_text = delta_text.rstrip()[:-1]
                 else:
+                    if delta_text[0] == '}' and len(delta_text.rstrip()) == 1:
+                        delta_text = delta_text.rstrip()[:-1]
+                    if len(delta_text.rstrip()) >= 2 and delta_text.rstrip()[-2] == '}' and delta_text.rstrip()[-1] == \
+                            '}':
+                        delta_text = delta_text.rstrip()[:-1]
                     delta_text = delta_text.replace('\n', '').replace('\r', '')
                 logger.debug("got diff %s", delta_text)
 
