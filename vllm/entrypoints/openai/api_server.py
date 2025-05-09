@@ -1117,7 +1117,6 @@ async def run_server(args, **uvicorn_kwargs) -> None:
 
 
 if __name__ == "__main__":
-    os.environ['CUDA_VISIBLE_DEVICES'] = '6'
     # NOTE(simon):
     # This section should be in sync with vllm/entrypoints/cli/main.py for CLI
     # entrypoints.
