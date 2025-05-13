@@ -101,6 +101,8 @@ class MQLLMEngineClient(EngineClient):
         self.tokenizer = init_tokenizer_from_configs(
             model_config=self.model_config,
             scheduler_config=engine_config.scheduler_config,
+            # 增加 parallel_config 参数，兼容一下0.8.1版本
+            parallel_config=engine_config.parallel_config,
             lora_config=engine_config.lora_config)
         self.input_preprocessor = InputPreprocessor(self.model_config,
                                                     self.tokenizer)
