@@ -4,7 +4,7 @@ import os
 import platform
 import random
 from platform import uname
-from typing import TYPE_CHECKING, NamedTuple, Optional, Tuple, Union
+from typing import TYPE_CHECKING, NamedTuple, Optional, Union
 
 import numpy as np
 import torch
@@ -51,6 +51,7 @@ class _Backend(enum.Enum):
     PALLAS_VLLM_V1 = enum.auto()
     IPEX = enum.auto()
     BLOCK_SPARSE_FLASH_ATTN = enum.auto()
+    DUAL_CHUNK_FLASH_ATTN = enum.auto()
     NO_ATTENTION = enum.auto()
 
 
@@ -83,7 +84,7 @@ class DeviceCapability(NamedTuple):
 
     def to_int(self) -> int:
         """
-        Express device capability as an integer ``<major><minor>``.
+        Express device capability as an integer `<major><minor>`.
 
         It is assumed that the minor version is always a single digit.
         """
@@ -156,7 +157,7 @@ class Platform:
         return self._enum == PlatformEnum.OOT
 
     def is_cuda_alike(self) -> bool:
-        """Stateless version of {func}`torch.cuda.is_available`."""
+        """Stateless version of [torch.cuda.is_available][]."""
         return self._enum in (PlatformEnum.CUDA, PlatformEnum.ROCM)
 
     def is_sleep_mode_available(self) -> bool:
@@ -193,22 +194,23 @@ class Platform:
         cls,
         device_id: int = 0,
     ) -> Optional[DeviceCapability]:
-        """Stateless version of {func}`torch.cuda.get_device_capability`."""
+        """Stateless version of [torch.cuda.get_device_capability][]."""
         return None
 
     @classmethod
     def has_device_capability(
         cls,
-        capability: Union[Tuple[int, int], int],
+        capability: Union[tuple[int, int], int],
         device_id: int = 0,
     ) -> bool:
         """
         Test whether this platform is compatible with a device capability.
 
-        The ``capability`` argument can either be:
+        The `capability` argument can either be:
 
-        - A tuple ``(major, minor)``.
-        - An integer ``<major><minor>``. (See {meth}`DeviceCapability.to_int`)
+        - A tuple `(major, minor)`.
+        - An integer `<major><minor>`. (See
+        [`DeviceCapability.to_int`][vllm.platforms.interface.DeviceCapability.to_int])
         """
         current_capability = cls.get_device_capability(device_id=device_id)
         if current_capability is None:
@@ -361,7 +363,7 @@ class Platform:
         raise NotImplementedError
 
     @classmethod
-    def get_infinity_values(cls, dtype: torch.dtype) -> Tuple[float, float]:
+    def get_infinity_values(cls, dtype: torch.dtype) -> tuple[float, float]:
         """
         Return the platform specific values for (-inf, inf)
         """
@@ -476,6 +478,13 @@ class Platform:
         Returns the total number of compute units (CU) on single GPU.
         """
         raise NotImplementedError
+
+    @classmethod
+    def get_piecewise_backend_cls(cls) -> str:
+        """
+        Get piecewise backend class for piecewise graph.
+        """
+        return "vllm.compilation.base_piecewise_backend.AbstractPiecewiseBackend"  # noqa
 
 
 class UnspecifiedPlatform(Platform):
