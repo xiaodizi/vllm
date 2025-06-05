@@ -124,6 +124,8 @@ class Hermes2ProToolParser(ToolParser):
         request: ChatCompletionRequest,
     ) -> Union[DeltaMessage, None]:
         logger.debug("delta_text: %s", delta_text)
+        if delta_text.rstrip() == 'time':
+            logger.debug('lei')
         logger.debug("delta_token_ids: %s", delta_token_ids)
         # check to see if we should be streaming a tool call - is there a
         if self.tool_call_start_token_id not in current_token_ids:
@@ -160,6 +162,7 @@ class Hermes2ProToolParser(ToolParser):
                         self.tool_call_end_token)[0].rstrip()
                 delta_text = delta_text.split(
                     self.tool_call_end_token)[0].rstrip()
+
                 text_portion = delta_text.split(
                     self.tool_call_end_token)[-1].lstrip()
 
@@ -211,7 +214,7 @@ class Hermes2ProToolParser(ToolParser):
                 if diff:
                     diff = diff.encode('utf-8').decode(
                         'unicode_escape') if diff is str else diff
-                    if ('"}' not in delta_text):
+                    if '"}' not in delta_text:
                         return None
                     end_loc = delta_text.rindex('"}')
                     diff = delta_text[:end_loc] + '"}'
@@ -235,11 +238,16 @@ class Hermes2ProToolParser(ToolParser):
                 return delta
 
             try:
+                from partialjson.json_parser import JSONParser
+                parser = JSONParser(strict=False)
 
-                current_tool_call = partial_json_parser.loads(
+                name_current_tool_call = partial_json_parser.loads(
                     tool_call_portion or "{}",
                     flags) if tool_call_portion else None
-                logger.debug("Parsed tool call %s", current_tool_call)
+                current_tool_call = None
+                if tool_call_portion is not None:
+                    current_tool_call = parser.parse(tool_call_portion)
+                    logger.debug("Parsed tool call %s", current_tool_call)
             except partial_json_parser.core.exceptions.MalformedJSON:
                 logger.debug('not enough tokens to parse into JSON yet')
                 return None
@@ -250,9 +258,9 @@ class Hermes2ProToolParser(ToolParser):
             # case - we haven't sent the tool name yet. If it's available, send
             #   it. otherwise, wait until it's available.
             if not self.current_tool_name_sent:
-                if (current_tool_call is None):
+                if current_tool_call is None:
                     return None
-                function_name: Union[str, None] = current_tool_call.get("name")
+                function_name: Union[str, None] = name_current_tool_call.get("name")
                 if function_name:
                     self.current_tool_name_sent = True
                     return DeltaMessage(tool_calls=[
@@ -315,9 +323,9 @@ class Hermes2ProToolParser(ToolParser):
                                                 ensure_ascii=False)
                 logger.debug("finding %s in %s", delta_text,
                              cur_arguments_json)
-
                 # get the location where previous args differ from current
-                if (delta_text not in cur_arguments_json[:-2]):
+                # delta_text = delta_text[:-1]
+                if delta_text not in cur_arguments_json[:-2]:
                     return None
                 args_delta_start_loc = cur_arguments_json[:-2]. \
                                            rindex(delta_text) + \
@@ -325,6 +333,7 @@ class Hermes2ProToolParser(ToolParser):
 
                 # use that to find the actual delta
                 arguments_delta = cur_arguments_json[:args_delta_start_loc]
+                logger.debug("lei test arguments delta: %s", arguments_delta)
                 logger.debug("First tokens in arguments received: %s",
                              arguments_delta)
 
@@ -340,7 +349,7 @@ class Hermes2ProToolParser(ToolParser):
             # last case -- we have an update to existing arguments.
             elif cur_arguments and prev_arguments:
                 detal.append(delta_text)
-                logger.debug("lei test: %s", detal)
+                # logger.debug("lei test: %s", detal)
                 # delta_text = delta_text.lstrip();
                 if isinstance(delta_text, str) and len(delta_text.rstrip(
                 )) > 1 and delta_text.rstrip()[-1] == '}' and delta_text[0] == '}':
