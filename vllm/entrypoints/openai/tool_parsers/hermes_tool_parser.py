@@ -125,9 +125,6 @@ class Hermes2ProToolParser(ToolParser):
         request: ChatCompletionRequest,
     ) -> Union[DeltaMessage, None]:
         logger.debug("delta_text: %s", delta_text)
-        if delta_text.rstrip() == 'time':
-            logger.debug('lei')
-        logger.debug("delta_token_ids: %s", delta_token_ids)
         # check to see if we should be streaming a tool call - is there a
         if self.tool_call_start_token_id not in current_token_ids:
             logger.debug("No tool call tokens found!")
@@ -186,7 +183,8 @@ class Hermes2ProToolParser(ToolParser):
                     delta = None
 
                 text_portion = None
-
+                if self.current_tool_id == 1:
+                    logger.debug("lei test")
                 # set cursors and state appropriately
                 self.current_tool_id += 1
                 self.current_tool_name_sent = False
@@ -246,6 +244,8 @@ class Hermes2ProToolParser(ToolParser):
                     tool_call_portion or "{}",
                     flags) if tool_call_portion else None
                 current_tool_call = None
+                if tool_call_portion == '\nassistant\n{\n':
+                    logger.debug(tool_call_portion)
                 if tool_call_portion is not None:
                     current_tool_call = parser.parse(tool_call_portion)
                     logger.debug("Parsed tool call %s", current_tool_call)
@@ -297,6 +297,8 @@ class Hermes2ProToolParser(ToolParser):
 
             # main logic for tool parsing here - compare prev. partially-parsed
             #   JSON to the current partially-parsed JSON
+            logger.debug("lei test prev_tool_call_arr: %s",self.prev_tool_call_arr)
+            logger.debug("lei test current_tool_id: %s", self.current_tool_id)
             prev_arguments = (
                 self.prev_tool_call_arr[self.current_tool_id].get("arguments"))
             cur_arguments = current_tool_call.get("arguments")
@@ -334,7 +336,6 @@ class Hermes2ProToolParser(ToolParser):
 
                 # use that to find the actual delta
                 arguments_delta = cur_arguments_json[:args_delta_start_loc]
-                logger.debug("lei test arguments delta: %s", arguments_delta)
                 logger.debug("First tokens in arguments received: %s",
                              arguments_delta)
 
@@ -350,16 +351,17 @@ class Hermes2ProToolParser(ToolParser):
             # last case -- we have an update to existing arguments.
             elif cur_arguments and prev_arguments:
                 detal.append(delta_text)
-                # logger.debug("lei test: %s", detal)
-                # delta_text = delta_text.lstrip();
+                logger.debug("appended %s", detal)
+                if delta_text == '}\n':
+                    logger.debug("lei test %s", delta_text)
                 if isinstance(delta_text, str) and len(delta_text.rstrip(
                 )) > 1 and delta_text.rstrip()[-1] == '}' and delta_text[0] == '}':
                     if delta_text.lstrip().rstrip()[0] == '}':
                         logger.debug("Exceptional condition: %s", delta_text)
                     delta_text = delta_text.rstrip()[:-1]
                 else:
-                    if delta_text[0] == '}' and len(delta_text.rstrip()) == 1:
-                        delta_text = delta_text.rstrip()[:-1]
+                    # if delta_text !="" and delta_text[0] == '}' and len(delta_text.rstrip()) == 1:
+                    #     delta_text = delta_text.rstrip()[:-1]
                     if len(delta_text.rstrip()) >= 2 and delta_text.rstrip()[-2] == '}' and delta_text.rstrip()[-1] == \
                             '}':
                         delta_text = delta_text.rstrip()[:-1]
@@ -382,7 +384,6 @@ class Hermes2ProToolParser(ToolParser):
                     current_tool_call
             else:
                 self.prev_tool_call_arr.append(current_tool_call)
-
             return delta
 
         except Exception:

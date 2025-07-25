@@ -49,6 +49,7 @@ class StructuredOutputManager:
         self.tokenizer = init_tokenizer_from_configs(
             model_config=self.vllm_config.model_config,
             scheduler_config=self.vllm_config.scheduler_config,
+           # parallel_config=self.vllm_config.parallel_config,
             lora_config=self.vllm_config.lora_config,
         ).get_lora_tokenizer(None)
         reasoning_backend = vllm_config.decoding_config.reasoning_backend
